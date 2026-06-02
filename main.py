@@ -21,7 +21,7 @@ def obtener_conexion():
 def crear_db():
     conn = obtener_conexion()
     cursor = conn.cursor()
-    conn.execute("""
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS snapshots (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp   TEXT,
@@ -44,7 +44,8 @@ def guardar_snapshot():
     feed = gtfs_realtime_pb2.FeedMessage()
     feed.ParseFromString(response.content)
     
-    conn = sqlite3.connect(DB_PATH)
+    conn = obtener_conexion()
+    cursor = conn.cursor()
     count = 0
     timestamp = datetime.now(timezone.utc).isoformat()
     
@@ -71,6 +72,7 @@ def guardar_snapshot():
             count+= 1
 
     conn.commit()
+    cursor.close()
     conn.close()
     print(f"{timestamp} +{count} vehicles saved")
 
