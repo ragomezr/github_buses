@@ -1,0 +1,4 @@
+requests
+protobuf
+gtfs-realtime-bindings
+psycopg2-binary
