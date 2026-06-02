@@ -6,6 +6,7 @@ import sys
 from datetime import datetime, timezone
 from google.transit import gtfs_realtime_pb2
 
+
 URL = "https://exo.chrono-saeiv.com/api/opendata/v1/STS/vehicleposition?token=ed02f9a16ccc44f1b3ee37d704db5bfd"
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
@@ -18,7 +19,8 @@ def obtener_conexion():
     
 
 def crear_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = obtener_conexion()
+    cursor = conn.cursor()
     conn.execute("""
         CREATE TABLE IF NOT EXISTS snapshots (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,6 +36,7 @@ def crear_db():
         )
     """)
     conn.commit()
+    cursor.close()
     conn.close()
 
 def guardar_snapshot():
@@ -43,13 +46,14 @@ def guardar_snapshot():
     
     conn = sqlite3.connect(DB_PATH)
     count = 0
+    timestamp = datetime.now(timezone.utc).isoformat()
     
     for entity in feed.entity:
         if entity.HasField('vehicle'):
             v = entity.vehicle
             timestamp = datetime.fromtimestamp(v.timestamp, tz=timezone.utc).isoformat()
 
-            conn.execute("""
+            cursor.execute("""
                 INSERT INTO snapshots 
                 (timestamp, vehicle_id, route_id, lat, lon, speed_kmh, bearing, stop_id, status)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -66,7 +70,6 @@ def guardar_snapshot():
             ))
             count+= 1
 
-    cursor = conn.execute("SELECT COUNT(*) FROM snapshots")
     conn.commit()
     conn.close()
     print(f"{timestamp} +{count} vehicles saved")
